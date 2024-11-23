@@ -1,0 +1,6 @@
+fastapi
+websockets
+websocket-client
+uvicorn
+loguru
+requests
