@@ -74,3 +74,7 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())
 ```
+
+- 反正就算我写的再详细也不会有人来用我的代码的awa
+
+
