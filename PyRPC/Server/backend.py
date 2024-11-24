@@ -8,7 +8,6 @@ from ..Models import MiddleWareStatus
 import uvicorn
 import inspect
 import asyncio
-from ._type import Address
 from typing import Callable
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,18 +80,18 @@ class RPCServer(IRPCServer):
             self.handler = None
             self.logger.info(f"Handler {name} removed from server")
 
-    def run(self, addr: Address) -> None:
+    def run(self, host: str = "127.0.0.1", port: int = 8000) -> None:
         if self.handler is None:
             self.logger.warning("No handler set, server will use a default handler")
             self.handler = DefaultHandler(self._parseCall())
 
-        self.logger.info(f"Starting server on ws://{addr[0]}:{addr[1]}")
+        self.logger.info(f"Starting server on ws://{host}:{port})")
         self.handle() # 在启动之前先注册路由
         if self.debug:
             self.logger.warning("Debug mode is on, server will not be started in production environment")
-            uvicorn.run(self.app, host=addr[0], port=addr[1], log_level="debug")
+            uvicorn.run(self.app, host=host, port=port, log_level="debug")
         else:
-            uvicorn.run(self.app, host=addr[0], port=addr[1], log_level="critical")
+            uvicorn.run(self.app, host=host, port=port, log_level="critical")
         self.logger.info("Server stopped")
 
     def addCallItem(self, item: IRemoteCallable) -> None:
