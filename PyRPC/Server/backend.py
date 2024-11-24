@@ -8,6 +8,7 @@ from ..Models import MiddleWareStatus
 import uvicorn
 import inspect
 import asyncio
+from ._type import Address
 from typing import Callable
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,18 +81,18 @@ class RPCServer(IRPCServer):
             self.handler = None
             self.logger.info(f"Handler {name} removed from server")
 
-    def run(self, host: str, port: int) -> None:
+    def run(self, addr: Address) -> None:
         if self.handler is None:
             self.logger.warning("No handler set, server will use a default handler")
             self.handler = DefaultHandler(self._parseCall())
 
-        self.logger.info(f"Starting server on ws://{host}:{port}")
+        self.logger.info(f"Starting server on ws://{addr[0]}:{addr[1]}")
         self.handle() # 在启动之前先注册路由
         if self.debug:
             self.logger.warning("Debug mode is on, server will not be started in production environment")
-            uvicorn.run(self.app, host=host, port=port, log_level="debug")
+            uvicorn.run(self.app, host=addr[0], port=addr[1], log_level="debug")
         else:
-            uvicorn.run(self.app, host=host, port=port, log_level="critical")
+            uvicorn.run(self.app, host=addr[0], port=addr[1], log_level="critical")
         self.logger.info("Server stopped")
 
     def addCallItem(self, item: IRemoteCallable) -> None:
@@ -129,11 +130,7 @@ class RPCServer(IRPCServer):
             return ws , MiddleWareStatus.NORMAL
         for middleware in self.middlewares:
             self.logger.trace(f"Middleware {middleware.__class__.__name__} before handle")
-            if not middleware.ws:
-                await middleware.setWebSocket(ws=ws)
-            if not middleware.app:
-                await middleware.setApp(app=self.app)
-            status = await middleware.before(*args, **kwargs)
+            status = await middleware.before(app=self.app, ws=ws, *args, **kwargs)
         return ws , status
         
     async def _afterHandle(self, ws: WebSocket, status: str, *args, **kwargs) -> None:
@@ -143,7 +140,7 @@ class RPCServer(IRPCServer):
             await self._after(ws, status)
         for middleware in self.middlewares:
             self.logger.trace(f"Middleware {middleware.__class__.__name__} after handle")
-            await middleware.after(*args, **kwargs)
+            await middleware.after(app=self.app, ws=ws, *args, **kwargs)
         await self._after(ws, status)
 
     async def _after(self, ws: WebSocket, status: str) -> None:

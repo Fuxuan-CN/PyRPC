@@ -4,6 +4,7 @@ from ...Interfaces import IRPCMiddleWare
 from fastapi import WebSocket , FastAPI
 import time
 from datetime import timedelta
+from typing import Any
 import jwt
 from ...Utils.logger import get_logger
 from pydantic_core import ValidationError
@@ -13,17 +14,7 @@ class DefaultRPCAuth(IRPCMiddleWare):
     """ 默认RPC认证类 """
     def __init__(self, sequence: int = 1) -> None:
         self.logger = get_logger(self.__class__.__name__)
-        self.app = None
-        self.ws = None
         self.sequence = sequence
-
-    async def setApp(self, app: FastAPI) -> None:
-        """ 设置FastAPI应用 """
-        self.app = app
-
-    async def setWebSocket(self, ws: WebSocket) -> None:
-        """ 设置WebSocket """
-        self.ws = ws
 
     async def authenticate(self, payload: IdentityClientCard) -> bool:
         """ 验证客户端请求 """
@@ -46,10 +37,10 @@ class DefaultRPCAuth(IRPCMiddleWare):
             self.logger.error(f"Failed to register user: {type(e).__name__} - {str(e)}")
             return IdentityClientCard(serverAllowed=False, token=None)
         
-    async def before(self, *args, **kwargs) -> MiddleWareStatus:
+    async def before(self,app: FastAPI, ws: WebSocket, *args, **kwargs) -> MiddleWareStatus:
         """ 客户端连接时调用 """
         try:
-            authInfo = await self.ws.receive_json()
+            authInfo = await ws.receive_json()
             authDict: dict = json.loads(authInfo)
             mode = authDict.get("mode", "")
             if mode == "register":
@@ -78,5 +69,11 @@ class DefaultRPCAuth(IRPCMiddleWare):
             await self.ws.send_json({"status": "failed", "message": "Invalid authentication request"})
             return MiddleWareStatus.WANT_TO_CLOSE
         
-    async def after(self, *args, **kwargs) -> None:
+    async def after(self,app: FastAPI, ws: WebSocket, *args, **kwargs) -> None:
         return
+    
+    async def __call__(self, app: FastAPI, ws: WebSocket, *args, **kwargs) -> Any:
+        """ 调用中间件 """
+        status = await self.before(app, ws, *args, **kwargs)
+        return status
+        

@@ -12,6 +12,6 @@ def someThing() -> str:
     return "Hello World!"
 
 if __name__ == '__main__':
-    server = RPCServer(debug=True)
+    server = RPCServer(debug=False)
     server.addCallItem(rpc)
-    server.run("127.0.0.1", 8000)
+    server.run(("127.0.0.1", 8000))

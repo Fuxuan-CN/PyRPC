@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 from .rpchandler import IRPCHandler
 from .rpccallitem import IRemoteCallable
 from ..Models import CallableCheckResponse
+from ..Server._type import Address
 
 class IRPCServer(ABC):
 
     @abstractmethod
-    def run(self, host: str, port: int) -> None:
+    def run(self, addr: Address) -> None:
         """ 启动RPC服务 """
         pass
 
