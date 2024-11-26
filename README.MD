@@ -75,6 +75,27 @@ if __name__ == '__main__':
     asyncio.run(main())
 ```
 
-- 反正就算我写的再详细也不会有人来用我的代码的awa
+### 如果要添加中间件
 
+```python
+from PyRPC.Server import RPCServer
+from PyRPC.Server import RemoteCallable
+from PyRPC.Server.Security import DefaultRPCAuth
 
+rpc = RemoteCallable()
+defaultAuth = DefaultRPCAuth() # 我提供的默认的身份验证中间件
+
+@rpc.registerCall
+def add(a: int, b: int) -> int:
+    return a + b
+
+@rpc.registerCall
+def someThing() -> str:
+    return "Hello World!"
+
+if __name__ == '__main__':
+    server = RPCServer(debug=False)
+    server.addCallItem(rpc)
+    server.addMiddleWare(defaultAuth) # add authentication middleware
+    server.run("127.0.0.1", 8000)
+```
